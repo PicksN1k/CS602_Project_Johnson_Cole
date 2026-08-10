@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 
 import * as productDB from './productModule.js';
 import * as authDB from './authModule.js';
+import * as orderDB from './orderModule.js';
 
 
 const mongoURL =
@@ -26,6 +27,30 @@ const typeDefs = `#graphql
     quantity: Int
   }
 
+  type OrderItem {
+    product: Product
+    quantity: Int
+    price: Float
+  }
+
+  type Order {
+    _id: String
+    customer: User
+    items: [OrderItem]
+    total: Float
+    createdAt: String
+  }   
+
+  input OrderItemInput {
+    productId: String!
+    quantity: Int!
+  }
+
+  input OrderItemInput {
+    productId: String!
+    quantity: Int!
+  }
+
   type User {
     id: String
     username: String
@@ -43,26 +68,65 @@ const typeDefs = `#graphql
     products: [Product]!
 
     productNameLookup(
-      name: String!
+        name: String!
     ): [Product]!
 
     productsByPrice(
-      min: Float!,
-      max: Float!
+        min: Float!,
+        max: Float!
     ): [Product]!
 
     currentUser: User
 
+    myOrders: [Order]!
+
+    customers: [User]!
+
+    customerOrders(
+        customerId: String!
+    ): [Order]!
   }
 
 
   type Mutation {
 
     login(
-      username: String!,
-      password: String!
+        username: String!,
+        password: String!
     ): AuthPayload
 
+
+    createOrder(
+        items: [OrderItemInput!]!
+    ): Order
+
+
+    addProduct(
+        id: String!,
+        name: String!,
+        description: String!,
+        price: Float!,
+        quantity: Int!
+    ): Product
+
+
+    updateProduct(
+        id: String!,
+        name: String,
+        description: String,
+        price: Float,
+        quantity: Int
+    ): Product
+
+
+    deleteProduct(
+        id: String!
+    ): Boolean
+
+
+    deleteOrder(
+        id: String!
+    ): Boolean
   }
 
 `;
@@ -121,6 +185,33 @@ const resolvers = {
       };
     }
 
+    myOrders: async (parent, args, context) => {
+
+        const user = authDB.requireUser(context);
+
+        return await orderDB.getCustomerOrders(
+            user.id
+        );
+    },
+
+
+    customers: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await orderDB.getCustomers();
+    },
+
+
+    customerOrders: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await orderDB.getOrdersByCustomer(
+        args.customerId
+        );
+    }
+
   },
 
 
@@ -136,8 +227,70 @@ const resolvers = {
       );
     }
 
-  }
+    createOrder: async (parent, args, context) => {
 
+        const user = authDB.requireUser(context);
+
+        if (user.role !== "customer") {
+            throw new Error(
+            "Only customers can place orders"
+            );
+        }
+
+        return await orderDB.createOrder(
+            user.id,
+            args.items
+        );
+    },
+
+
+        addProduct: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await productDB.addProduct(
+            args.id,
+            args.name,
+            args.description,
+            args.price,
+            args.quantity
+        );
+    },
+
+
+        updateProduct: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await productDB.updateProduct(
+            args.id,
+            args.name,
+            args.description,
+            args.price,
+            args.quantity
+        );
+    },
+
+
+        deleteProduct: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await productDB.deleteProduct(
+            args.id
+        );
+    },
+
+
+        deleteOrder: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await orderDB.deleteOrder(
+            args.id
+        );
+    }
+  }
 };
 
 

@@ -68,3 +68,24 @@ export const getUserFromToken = (authorization) => {
 
   }
 };
+
+export const requireUser = (context) => {
+
+  if (!context.user) {
+    throw new Error("Authentication required");
+  }
+
+  return context.user;
+};
+
+
+export const requireAdmin = (context) => {
+
+  requireUser(context);
+
+  if (context.user.role !== "admin") {
+    throw new Error("Admin access required");
+  }
+
+  return context.user;
+};
