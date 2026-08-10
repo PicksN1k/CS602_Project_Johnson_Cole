@@ -5,8 +5,11 @@ import { startStandaloneServer } from '@apollo/server/standalone';
 import mongoose from 'mongoose';
 
 import * as productDB from './productModule.js';
+import * as authDB from './authModule.js';
 
-const mongoURL = 'mongodb://127.0.0.1:27017/cs602_project';
+
+const mongoURL =
+  'mongodb://127.0.0.1:27017/cs602_project';
 
 await mongoose.connect(mongoURL);
 
@@ -23,6 +26,18 @@ const typeDefs = `#graphql
     quantity: Int
   }
 
+  type User {
+    id: String
+    username: String
+    role: String
+  }
+
+  type AuthPayload {
+    token: String
+    user: User
+  }
+
+
   type Query {
 
     products: [Product]!
@@ -35,6 +50,18 @@ const typeDefs = `#graphql
       min: Float!,
       max: Float!
     ): [Product]!
+
+    currentUser: User
+
+  }
+
+
+  type Mutation {
+
+    login(
+      username: String!,
+      password: String!
+    ): AuthPayload
 
   }
 
@@ -49,10 +76,7 @@ const resolvers = {
 
       console.log("GraphQL: Get all products");
 
-      const result =
-        await productDB.getAllProducts();
-
-      return result;
+      return await productDB.getAllProducts();
     },
 
 
@@ -63,10 +87,9 @@ const resolvers = {
         args.name
       );
 
-      const result =
-        await productDB.lookupByName(args.name);
-
-      return result;
+      return await productDB.lookupByName(
+        args.name
+      );
     },
 
 
@@ -78,13 +101,39 @@ const resolvers = {
         args.max
       );
 
-      const result =
-        await productDB.lookupByPrice(
-          args.min,
-          args.max
-        );
+      return await productDB.lookupByPrice(
+        args.min,
+        args.max
+      );
+    },
 
-      return result;
+
+    currentUser: async (parent, args, context) => {
+
+      if (!context.user) {
+        return null;
+      }
+
+      return {
+        id: context.user.id,
+        username: context.user.username,
+        role: context.user.role
+      };
+    }
+
+  },
+
+
+  Mutation: {
+
+    login: async (parent, args) => {
+
+      console.log("Login attempt:", args.username);
+
+      return await authDB.login(
+        args.username,
+        args.password
+      );
     }
 
   }
@@ -101,9 +150,23 @@ const server = new ApolloServer({
 const { url } = await startStandaloneServer(
   server,
   {
+
     listen: {
       port: 4000
+    },
+
+    context: async ({ req }) => {
+
+      const user =
+        authDB.getUserFromToken(
+          req.headers.authorization
+        );
+
+      return {
+        user: user
+      };
     }
+
   }
 );
 
