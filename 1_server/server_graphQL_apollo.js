@@ -290,7 +290,7 @@ const resolvers = {
         return await orderDB.deleteOrder(
             args.id
         );
-    }
+    },
 
         updateOrder: async (parent, args, context) => {
 
