@@ -133,3 +133,111 @@ export const deleteOrder = async (orderId) => {
 
   return true;
 };
+
+// ADMIN - Update an existing order
+export const updateOrder = async (orderId, newItems) => {
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
+  if (!newItems || newItems.length === 0) {
+    throw new Error("Order must contain at least one product");
+  }
+
+
+  // Restore inventory from the existing order
+  for (const item of order.items) {
+
+    await Product.findByIdAndUpdate(
+      item.product,
+      {
+        $inc: {
+          quantity: item.quantity
+        }
+      }
+    );
+  }
+
+
+  const updatedItems = [];
+  let total = 0;
+
+  try {
+
+    // Validate the new order
+    for (const item of newItems) {
+
+      const product =
+        await Product.findById(item.productId);
+
+      if (!product) {
+        throw new Error(
+          `Product ${item.productId} not found`
+        );
+      }
+
+      if (item.quantity <= 0) {
+        throw new Error(
+          "Quantity must be greater than zero"
+        );
+      }
+
+      if (product.quantity < item.quantity) {
+        throw new Error(
+          `Not enough ${product.name} in stock`
+        );
+      }
+
+      updatedItems.push({
+        product: product._id,
+        quantity: item.quantity,
+        price: product.price
+      });
+
+      total += product.price * item.quantity;
+    }
+
+
+    // Remove the new quantities from inventory
+    for (const item of newItems) {
+
+      await Product.findByIdAndUpdate(
+        item.productId,
+        {
+          $inc: {
+            quantity: -item.quantity
+          }
+        }
+      );
+    }
+
+
+    order.items = updatedItems;
+    order.total = Number(total.toFixed(2));
+
+    await order.save();
+
+    return order;
+
+  } catch (error) {
+
+    // If the update fails, put the original inventory
+    // back into the state it was in before the update.
+    for (const item of order.items) {
+
+      await Product.findByIdAndUpdate(
+        item.product,
+        {
+          $inc: {
+            quantity: -item.quantity
+          }
+        }
+      );
+    }
+
+    throw error;
+  }
+};

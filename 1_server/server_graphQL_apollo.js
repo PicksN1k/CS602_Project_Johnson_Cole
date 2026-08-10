@@ -95,11 +95,14 @@ const typeDefs = `#graphql
         password: String!
     ): AuthPayload
 
-
     createOrder(
         items: [OrderItemInput!]!
     ): Order
 
+    updateOrder(
+       id: String!,
+      items: [OrderItemInput!]!
+    ): Order
 
     addProduct(
         id: String!,
@@ -109,7 +112,6 @@ const typeDefs = `#graphql
         quantity: Int!
     ): Product
 
-
     updateProduct(
         id: String!,
         name: String,
@@ -117,7 +119,6 @@ const typeDefs = `#graphql
         price: Float,
         quantity: Int
     ): Product
-
 
     deleteProduct(
         id: String!
@@ -288,6 +289,16 @@ const resolvers = {
 
         return await orderDB.deleteOrder(
             args.id
+        );
+    }
+
+        updateOrder: async (parent, args, context) => {
+
+        authDB.requireAdmin(context);
+
+        return await orderDB.updateOrder(
+          args.id,
+          args.items
         );
     }
   }
