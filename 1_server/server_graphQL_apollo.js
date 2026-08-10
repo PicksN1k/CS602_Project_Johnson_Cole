@@ -183,7 +183,7 @@ const resolvers = {
         username: context.user.username,
         role: context.user.role
       };
-    }
+    },
 
     myOrders: async (parent, args, context) => {
 
@@ -225,7 +225,7 @@ const resolvers = {
         args.username,
         args.password
       );
-    }
+    },
 
     createOrder: async (parent, args, context) => {
 
