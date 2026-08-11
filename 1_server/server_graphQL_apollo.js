@@ -130,6 +130,7 @@ const resolvers = {
 
   Query: {
 
+    // GET ALL PRODUCTS
     products: async () => {
 
       console.log(
@@ -140,6 +141,7 @@ const resolvers = {
     },
 
 
+    // SEARCH PRODUCTS BY NAME
     productNameLookup: async (
       parent,
       args
@@ -156,6 +158,7 @@ const resolvers = {
     },
 
 
+    // SEARCH PRODUCTS BY PRICE
     productsByPrice: async (
       parent,
       args
@@ -174,6 +177,7 @@ const resolvers = {
     },
 
 
+    // CURRENT LOGGED IN USER
     currentUser: async (
       parent,
       args,
@@ -192,6 +196,7 @@ const resolvers = {
     },
 
 
+    // CUSTOMER - GET THEIR ORDERS
     myOrders: async (
       parent,
       args,
@@ -207,6 +212,7 @@ const resolvers = {
     },
 
 
+    // ADMIN - GET CUSTOMERS
     customers: async (
       parent,
       args,
@@ -215,10 +221,18 @@ const resolvers = {
 
       authDB.requireAdmin(context);
 
-      return await orderDB.getCustomers();
+      const customers =
+        await orderDB.getCustomers();
+
+      return customers.map(customer => ({
+        id: customer._id.toString(),
+        username: customer.username,
+        role: customer.role
+      }));
     },
 
 
+    // ADMIN - GET ORDERS FOR CUSTOMER
     customerOrders: async (
       parent,
       args,
@@ -237,6 +251,7 @@ const resolvers = {
 
   Mutation: {
 
+    // LOGIN
     login: async (
       parent,
       args
@@ -254,6 +269,7 @@ const resolvers = {
     },
 
 
+    // CUSTOMER - CREATE ORDER
     createOrder: async (
       parent,
       args,
@@ -278,6 +294,7 @@ const resolvers = {
     },
 
 
+    // ADMIN - ADD PRODUCT
     addProduct: async (
       parent,
       args,
@@ -296,6 +313,7 @@ const resolvers = {
     },
 
 
+    // ADMIN - UPDATE PRODUCT
     updateProduct: async (
       parent,
       args,
@@ -314,6 +332,7 @@ const resolvers = {
     },
 
 
+    // ADMIN - DELETE PRODUCT
     deleteProduct: async (
       parent,
       args,
@@ -328,6 +347,7 @@ const resolvers = {
     },
 
 
+    // ADMIN - DELETE ORDER
     deleteOrder: async (
       parent,
       args,
@@ -342,6 +362,7 @@ const resolvers = {
     },
 
 
+    // ADMIN - UPDATE ORDER
     updateOrder: async (
       parent,
       args,
