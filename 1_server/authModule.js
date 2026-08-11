@@ -1,180 +1,123 @@
-// File: clientModule.js
+// File: authModule.js
 
-import {
-  ApolloClient,
-  InMemoryCache,
-  HttpLink,
-  gql
-} from '@apollo/client';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
+import { User } from './models/index.js';
 
-const client = new ApolloClient({
-
-  link: new HttpLink({
-    uri: 'http://localhost:4000/'
-  }),
-
-  cache: new InMemoryCache(),
-
-  defaultOptions: {
-    query: {
-      fetchPolicy: 'network-only'
-    }
-  }
-
-});
-
-
-// Get authorization header
-function authContext() {
-
-  const token = localStorage.getItem("token");
-
-  return {
-    headers: {
-      Authorization: token
-        ? `Bearer ${token}`
-        : ""
-    }
-  };
-
-}
+const JWT_SECRET = "CS602_PROJECT_SECRET";
 
 
 // LOGIN
-
 export const login = async (username, password) => {
 
-  const result = await client.mutate({
-
-    mutation: gql`
-      mutation Login(
-        $username: String!,
-        $password: String!
-      ) {
-        login(
-          username: $username,
-          password: $password
-        ) {
-          token
-
-          user {
-            id
-            username
-            role
-          }
-        }
-      }
-    `,
-
-    variables: {
-      username,
-      password
-    }
-
+  const user = await User.findOne({
+    username: username
   });
 
-  return result.data.login;
-};
+  if (!user) {
+    throw new Error(
+      "Invalid username or password"
+    );
+  }
 
+  const passwordMatch =
+    await bcrypt.compare(
+      password,
+      user.password
+    );
 
-// GET PRODUCTS
+  if (!passwordMatch) {
+    throw new Error(
+      "Invalid username or password"
+    );
+  }
 
-export const getProducts = async () => {
-
-  const result = await client.query({
-
-    query: gql`
-      query {
-        products {
-          _id
-          name
-          description
-          price
-          quantity
-        }
-      }
-    `
-
-  });
-
-  return result.data.products;
-};
-
-
-// CREATE ORDER
-
-export const createOrder = async (items) => {
-
-  const result = await client.mutate({
-
-    mutation: gql`
-      mutation CreateOrder(
-        $items: [OrderItemInput!]!
-      ) {
-        createOrder(items: $items) {
-          _id
-          total
-
-          items {
-            product {
-              _id
-              name
-            }
-
-            quantity
-            price
-          }
-        }
-      }
-    `,
-
-    variables: {
-      items
+  const token = jwt.sign(
+    {
+      id: user._id.toString(),
+      username: user.username,
+      role: user.role
     },
+    JWT_SECRET,
+    {
+      expiresIn: "2h"
+    }
+  );
 
-    context: authContext()
+  return {
+    token: token,
 
-  });
-
-  return result.data.createOrder;
+    user: {
+      id: user._id.toString(),
+      username: user.username,
+      role: user.role
+    }
+  };
 };
 
 
-// GET CUSTOMER ORDERS
+// GET USER FROM JWT TOKEN
+export const getUserFromToken = (authorization) => {
 
-export const getMyOrders = async () => {
+  if (!authorization) {
+    return null;
+  }
 
-  const result = await client.query({
+  if (!authorization.startsWith("Bearer ")) {
+    return null;
+  }
 
-    query: gql`
-      query {
-        myOrders {
-          _id
-          total
-          createdAt
+  const token =
+    authorization.substring(7);
 
-          items {
-            product {
-              _id
-              name
-            }
+  try {
 
-            quantity
-            price
-          }
-        }
-      }
-    `,
+    return jwt.verify(
+      token,
+      JWT_SECRET
+    );
 
-    context: authContext(),
+  } catch (error) {
 
-    fetchPolicy: 'network-only'
+    console.log(
+      "Invalid token:",
+      error.message
+    );
 
-  });
-
-  return result.data.myOrders;
+    return null;
+  }
 };
 
 
-export default client;
+// REQUIRE LOGGED IN USER
+export const requireUser = (context) => {
+
+  if (!context.user) {
+
+    throw new Error(
+      "Authentication required"
+    );
+
+  }
+
+  return context.user;
+};
+
+
+// REQUIRE ADMIN
+export const requireAdmin = (context) => {
+
+  const user =
+    requireUser(context);
+
+  if (user.role !== "admin") {
+
+    throw new Error(
+      "Admin access required"
+    );
+
+  }
+
+  return user;
+};
