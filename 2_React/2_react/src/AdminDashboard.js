@@ -1,7 +1,7 @@
+// File: AdminDashboard.js
+
 import { useEffect, useState } from "react";
-
 import * as clientModule from "./clientModule.js";
-
 
 export default function AdminDashboard() {
 
@@ -13,6 +13,7 @@ export default function AdminDashboard() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [customerError, setCustomerError] = useState("");
 
   const [form, setForm] = useState({
     id: "",
@@ -24,12 +25,14 @@ export default function AdminDashboard() {
 
 
   useEffect(() => {
-
     loadProducts();
     loadCustomers();
-
   }, []);
 
+
+  // --------------------------------------------------
+  // LOAD PRODUCTS
+  // --------------------------------------------------
 
   async function loadProducts() {
 
@@ -38,13 +41,17 @@ export default function AdminDashboard() {
       const result =
         await clientModule.getProducts();
 
-      setProducts(result);
+      setProducts(result || []);
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "PRODUCT LOAD ERROR:",
+        error
+      );
 
       setError(
+        error.message ||
         "Unable to load products."
       );
 
@@ -53,20 +60,35 @@ export default function AdminDashboard() {
   }
 
 
+  // --------------------------------------------------
+  // LOAD CUSTOMERS
+  // --------------------------------------------------
+
   async function loadCustomers() {
 
     try {
 
+      setCustomerError("");
+
       const result =
         await clientModule.getCustomers();
 
-      setCustomers(result);
+      console.log(
+        "CUSTOMERS RESULT:",
+        result
+      );
+
+      setCustomers(result || []);
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "CUSTOMER LOAD ERROR:",
+        error
+      );
 
-      setError(
+      setCustomerError(
+        error.message ||
         "Unable to load customers."
       );
 
@@ -75,12 +97,15 @@ export default function AdminDashboard() {
   }
 
 
+  // --------------------------------------------------
+  // VIEW CUSTOMER ORDERS
+  // --------------------------------------------------
+
   async function viewCustomerOrders(customer) {
 
     try {
 
       setError("");
-
       setSelectedCustomer(customer);
 
       const result =
@@ -88,11 +113,14 @@ export default function AdminDashboard() {
           customer.id
         );
 
-      setCustomerOrders(result);
+      setCustomerOrders(result || []);
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "CUSTOMER ORDER ERROR:",
+        error
+      );
 
       setError(
         error.message ||
@@ -103,6 +131,10 @@ export default function AdminDashboard() {
 
   }
 
+
+  // --------------------------------------------------
+  // FORM
+  // --------------------------------------------------
 
   function handleChange(event) {
 
@@ -127,6 +159,7 @@ export default function AdminDashboard() {
       quantity: ""
     });
 
+    setMessage("");
   }
 
 
@@ -144,8 +177,17 @@ export default function AdminDashboard() {
       `Editing ${product.name}`
     );
 
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
   }
 
+
+  // --------------------------------------------------
+  // ADD PRODUCT
+  // --------------------------------------------------
 
   async function handleAddProduct(event) {
 
@@ -168,13 +210,16 @@ export default function AdminDashboard() {
         "Product added successfully."
       );
 
-      clearForm();
+      clearProductFields();
 
       await loadProducts();
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "ADD PRODUCT ERROR:",
+        error
+      );
 
       setError(
         error.message ||
@@ -185,6 +230,10 @@ export default function AdminDashboard() {
 
   }
 
+
+  // --------------------------------------------------
+  // UPDATE PRODUCT
+  // --------------------------------------------------
 
   async function handleUpdateProduct() {
 
@@ -214,13 +263,16 @@ export default function AdminDashboard() {
         "Product updated successfully."
       );
 
-      clearForm();
+      clearProductFields();
 
       await loadProducts();
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "UPDATE PRODUCT ERROR:",
+        error
+      );
 
       setError(
         error.message ||
@@ -231,6 +283,10 @@ export default function AdminDashboard() {
 
   }
 
+
+  // --------------------------------------------------
+  // DELETE PRODUCT
+  // --------------------------------------------------
 
   async function handleDeleteProduct(id) {
 
@@ -258,7 +314,10 @@ export default function AdminDashboard() {
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "DELETE PRODUCT ERROR:",
+        error
+      );
 
       setError(
         error.message ||
@@ -269,6 +328,10 @@ export default function AdminDashboard() {
 
   }
 
+
+  // --------------------------------------------------
+  // DELETE ORDER
+  // --------------------------------------------------
 
   async function handleDeleteOrder(id) {
 
@@ -304,7 +367,10 @@ export default function AdminDashboard() {
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "DELETE ORDER ERROR:",
+        error
+      );
 
       setError(
         error.message ||
@@ -315,6 +381,23 @@ export default function AdminDashboard() {
 
   }
 
+
+  function clearProductFields() {
+
+    setForm({
+      id: "",
+      name: "",
+      description: "",
+      price: "",
+      quantity: ""
+    });
+
+  }
+
+
+  // --------------------------------------------------
+  // DISPLAY
+  // --------------------------------------------------
 
   return (
 
@@ -340,6 +423,8 @@ export default function AdminDashboard() {
 
       )}
 
+
+      {/* PRODUCT MANAGEMENT */}
 
       <div className="section">
 
@@ -432,6 +517,8 @@ export default function AdminDashboard() {
       </div>
 
 
+      {/* PRODUCTS */}
+
       <div className="section">
 
         <h2>Products</h2>
@@ -450,7 +537,6 @@ export default function AdminDashboard() {
 
           </thead>
 
-
           <tbody>
 
             {products.map(product => (
@@ -466,7 +552,7 @@ export default function AdminDashboard() {
                 </td>
 
                 <td>
-                  ${product.price.toFixed(2)}
+                  ${Number(product.price).toFixed(2)}
                 </td>
 
                 <td>
@@ -476,6 +562,7 @@ export default function AdminDashboard() {
                 <td>
 
                   <button
+                    type="button"
                     onClick={() =>
                       selectProduct(product)
                     }
@@ -486,6 +573,7 @@ export default function AdminDashboard() {
                   {" "}
 
                   <button
+                    type="button"
                     onClick={() =>
                       handleDeleteProduct(
                         product._id
@@ -508,61 +596,100 @@ export default function AdminDashboard() {
       </div>
 
 
+      {/* CUSTOMERS */}
+
       <div className="section">
 
         <h2>Customers</h2>
 
-        <table>
 
-          <thead>
+        {customerError && (
 
-            <tr>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Orders</th>
-            </tr>
+          <div className="error">
 
-          </thead>
+            {customerError}
+
+            <br />
+
+            <button
+              type="button"
+              onClick={loadCustomers}
+            >
+              Try Again
+            </button>
+
+          </div>
+
+        )}
 
 
-          <tbody>
+        {!customerError &&
+          customers.length === 0 && (
 
-            {customers.map(customer => (
+          <p>
+            No customer accounts found.
+          </p>
 
-              <tr key={customer.id}>
+        )}
 
-                <td>
-                  {customer.username}
-                </td>
 
-                <td>
-                  {customer.role}
-                </td>
+        {customers.length > 0 && (
 
-                <td>
+          <table>
 
-                  <button
-                    onClick={() =>
-                      viewCustomerOrders(
-                        customer
-                      )
-                    }
-                  >
-                    View Orders
-                  </button>
+            <thead>
 
-                </td>
-
+              <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Orders</th>
               </tr>
 
-            ))}
+            </thead>
 
-          </tbody>
+            <tbody>
 
-        </table>
+              {customers.map(customer => (
+
+                <tr key={customer.id}>
+
+                  <td>
+                    {customer.username}
+                  </td>
+
+                  <td>
+                    {customer.role}
+                  </td>
+
+                  <td>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        viewCustomerOrders(
+                          customer
+                        )
+                      }
+                    >
+                      View Orders
+                    </button>
+
+                  </td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+        )}
 
       </div>
 
+
+      {/* CUSTOMER ORDERS */}
 
       {selectedCustomer && (
 
@@ -595,7 +722,7 @@ export default function AdminDashboard() {
 
                 <p>
                   Total: $
-                  {order.total.toFixed(2)}
+                  {Number(order.total).toFixed(2)}
                 </p>
 
 
@@ -609,14 +736,15 @@ export default function AdminDashboard() {
                         {item.product?.name ||
                           "Product"}
 
-                        {" - "}
+                        {" - Quantity: "}
 
-                        Quantity:{" "}
                         {item.quantity}
 
                         {" - $"}
 
-                        {item.price.toFixed(2)}
+                        {Number(
+                          item.price
+                        ).toFixed(2)}
 
                       </li>
 
@@ -627,6 +755,7 @@ export default function AdminDashboard() {
 
 
                 <button
+                  type="button"
                   onClick={() =>
                     handleDeleteOrder(
                       order._id
