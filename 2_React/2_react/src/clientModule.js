@@ -211,43 +211,24 @@ export const getCustomers = async () => {
 
 // GET CUSTOMER ORDERS - ADMIN
 
-export const getCustomerOrders = async (customerId) => {
+export const getCustomers = async () => {
+
+  const auth = getAuthContext();
 
   const result = await client.query({
-
     query: gql`
-      query CustomerOrders($customerId: String!) {
-
-        customerOrders(customerId: $customerId) {
-
-          _id
-          total
-          createdAt
-
-          items {
-            product {
-              _id
-              name
-            }
-
-            quantity
-            price
-          }
+      query {
+        customers {
+          id
+          username
+          role
         }
       }
     `,
-
-    variables: {
-      customerId
-    },
-
-    context: authContext(),
-
-    fetchPolicy: 'network-only'
-
+    ...auth
   });
 
-  return result.data.customerOrders;
+  return result.data.customers;
 };
 
 // ADD PRODUCT - ADMIN
