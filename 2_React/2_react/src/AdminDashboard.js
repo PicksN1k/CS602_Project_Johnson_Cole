@@ -15,6 +15,10 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [customerError, setCustomerError] = useState("");
 
+  // Order currently being edited
+  const [editingOrder, setEditingOrder] = useState(null);
+
+  // Product management form
   const [form, setForm] = useState({
     id: "",
     name: "",
@@ -107,6 +111,7 @@ export default function AdminDashboard() {
 
       setError("");
       setSelectedCustomer(customer);
+      setEditingOrder(null);
 
       const result =
         await clientModule.getCustomerOrders(
@@ -133,7 +138,7 @@ export default function AdminDashboard() {
 
 
   // --------------------------------------------------
-  // FORM
+  // PRODUCT FORM
   // --------------------------------------------------
 
   function handleChange(event) {
@@ -160,6 +165,20 @@ export default function AdminDashboard() {
     });
 
     setMessage("");
+
+  }
+
+
+  function clearProductFields() {
+
+    setForm({
+      id: "",
+      name: "",
+      description: "",
+      price: "",
+      quantity: ""
+    });
+
   }
 
 
@@ -249,6 +268,7 @@ export default function AdminDashboard() {
         );
 
         return;
+
       }
 
       await clientModule.updateProduct(
@@ -330,6 +350,151 @@ export default function AdminDashboard() {
 
 
   // --------------------------------------------------
+  // START EDITING ORDER
+  // --------------------------------------------------
+
+  function handleEditOrder(order) {
+
+    setError("");
+    setMessage("");
+
+    setEditingOrder({
+      id: order._id,
+
+      items: order.items.map(item => ({
+        productId: item.product?._id || "",
+        productName:
+          item.product?.name || "Product",
+        quantity: item.quantity
+      }))
+    });
+
+  }
+
+
+  // --------------------------------------------------
+  // CHANGE ORDER QUANTITY
+  // --------------------------------------------------
+
+  function handleOrderQuantityChange(
+    index,
+    value
+  ) {
+
+    const updatedItems =
+      [...editingOrder.items];
+
+    updatedItems[index] = {
+      ...updatedItems[index],
+      quantity: value
+    };
+
+    setEditingOrder({
+      ...editingOrder,
+      items: updatedItems
+    });
+
+  }
+
+
+  // --------------------------------------------------
+  // SAVE UPDATED ORDER
+  // --------------------------------------------------
+
+  async function handleUpdateOrder() {
+
+    try {
+
+      setError("");
+      setMessage("");
+
+      if (!editingOrder) {
+        return;
+      }
+
+      const items =
+        editingOrder.items.map(item => ({
+          productId: item.productId,
+          quantity: Number(item.quantity)
+        }));
+
+      for (const item of items) {
+
+        if (!item.productId) {
+
+          setError(
+            "An order item is missing its product."
+          );
+
+          return;
+
+        }
+
+        if (
+          !Number.isInteger(item.quantity) ||
+          item.quantity <= 0
+        ) {
+
+          setError(
+            "Order quantities must be greater than zero."
+          );
+
+          return;
+
+        }
+
+      }
+
+      await clientModule.updateOrder(
+        editingOrder.id,
+        items
+      );
+
+      setMessage(
+        "Order updated successfully."
+      );
+
+      setEditingOrder(null);
+
+      if (selectedCustomer) {
+
+        await viewCustomerOrders(
+          selectedCustomer
+        );
+
+      }
+
+      await loadProducts();
+
+    } catch (error) {
+
+      console.error(
+        "UPDATE ORDER ERROR:",
+        error
+      );
+
+      setError(
+        error.message ||
+        "Unable to update order."
+      );
+
+    }
+
+  }
+
+
+  // --------------------------------------------------
+  // CANCEL ORDER EDIT
+  // --------------------------------------------------
+
+  function cancelOrderEdit() {
+
+    setEditingOrder(null);
+
+  }
+
+
+  // --------------------------------------------------
   // DELETE ORDER
   // --------------------------------------------------
 
@@ -355,6 +520,8 @@ export default function AdminDashboard() {
         "Order deleted successfully."
       );
 
+      setEditingOrder(null);
+
       if (selectedCustomer) {
 
         await viewCustomerOrders(
@@ -378,19 +545,6 @@ export default function AdminDashboard() {
       );
 
     }
-
-  }
-
-
-  function clearProductFields() {
-
-    setForm({
-      id: "",
-      name: "",
-      description: "",
-      price: "",
-      quantity: ""
-    });
 
   }
 
@@ -552,7 +706,9 @@ export default function AdminDashboard() {
                 </td>
 
                 <td>
-                  ${Number(product.price).toFixed(2)}
+                  ${Number(
+                    product.price
+                  ).toFixed(2)}
                 </td>
 
                 <td>
@@ -626,11 +782,11 @@ export default function AdminDashboard() {
         {!customerError &&
           customers.length === 0 && (
 
-          <p>
-            No customer accounts found.
-          </p>
+            <p>
+              No customer accounts found.
+            </p>
 
-        )}
+          )}
 
 
         {customers.length > 0 && (
@@ -722,7 +878,9 @@ export default function AdminDashboard() {
 
                 <p>
                   Total: $
-                  {Number(order.total).toFixed(2)}
+                  {Number(
+                    order.total
+                  ).toFixed(2)}
                 </p>
 
 
@@ -757,6 +915,17 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() =>
+                    handleEditOrder(order)
+                  }
+                >
+                  Edit Order
+                </button>
+
+                {" "}
+
+                <button
+                  type="button"
+                  onClick={() =>
                     handleDeleteOrder(
                       order._id
                     )
@@ -764,6 +933,76 @@ export default function AdminDashboard() {
                 >
                   Delete Order
                 </button>
+
+
+                {/* EDIT ORDER FORM */}
+
+                {editingOrder &&
+                  editingOrder.id ===
+                    order._id && (
+
+                  <div className="section">
+
+                    <h3>
+                      Edit Order
+                    </h3>
+
+
+                    {editingOrder.items.map(
+                      (item, index) => (
+
+                        <div key={index}>
+
+                          <label>
+                            {item.productName}
+                          </label>
+
+                          <input
+                            type="number"
+                            min="1"
+                            value={
+                              item.quantity
+                            }
+                            onChange={event =>
+                              handleOrderQuantityChange(
+                                index,
+                                event.target.value
+                              )
+                            }
+                          />
+
+                        </div>
+
+                      )
+                    )}
+
+
+                    <br />
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        handleUpdateOrder
+                      }
+                    >
+                      Save Order
+                    </button>
+
+                    {" "}
+
+                    <button
+                      type="button"
+                      onClick={
+                        cancelOrderEdit
+                      }
+                    >
+                      Cancel
+                    </button>
+
+                  </div>
+
+                )}
 
               </div>
 
