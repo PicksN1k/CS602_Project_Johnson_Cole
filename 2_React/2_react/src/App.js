@@ -7,7 +7,7 @@ import * as clientModule from "./clientModule.js";
 
 import "./App.css";
 import CustomerShop from "./CustomerShop.js";
-
+import AdminDashboard from "./AdminDashboard.js";
 
 function App() {
 
@@ -95,15 +95,7 @@ function App() {
 
       {user.role === "admin" && (
 
-        <div>
-
-          <h2>Admin Dashboard</h2>
-
-          <p>
-            Product and customer management will appear here.
-          </p>
-
-        </div>
+        <AdminDashboard />
 
       )}
 

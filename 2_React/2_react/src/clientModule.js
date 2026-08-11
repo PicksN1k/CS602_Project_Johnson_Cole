@@ -184,5 +184,226 @@ export const getMyOrders = async () => {
   return result.data.myOrders;
 };
 
+// GET CUSTOMERS - ADMIN
+
+export const getCustomers = async () => {
+
+  const result = await client.query({
+
+    query: gql`
+      query {
+        customers {
+          id
+          username
+          role
+        }
+      }
+    `,
+
+    context: authContext(),
+
+    fetchPolicy: 'network-only'
+
+  });
+
+  return result.data.customers;
+};
+
+// GET CUSTOMER ORDERS - ADMIN
+
+export const getCustomerOrders = async (customerId) => {
+
+  const result = await client.query({
+
+    query: gql`
+      query CustomerOrders($customerId: String!) {
+
+        customerOrders(customerId: $customerId) {
+
+          _id
+          total
+          createdAt
+
+          items {
+            product {
+              _id
+              name
+            }
+
+            quantity
+            price
+          }
+        }
+      }
+    `,
+
+    variables: {
+      customerId
+    },
+
+    context: authContext(),
+
+    fetchPolicy: 'network-only'
+
+  });
+
+  return result.data.customerOrders;
+};
+
+// ADD PRODUCT - ADMIN
+
+export const addProduct = async (
+  id,
+  name,
+  description,
+  price,
+  quantity
+) => {
+
+  const result = await client.mutate({
+
+    mutation: gql`
+      mutation AddProduct(
+        $id: String!,
+        $name: String!,
+        $description: String!,
+        $price: Float!,
+        $quantity: Int!
+      ) {
+
+        addProduct(
+          id: $id,
+          name: $name,
+          description: $description,
+          price: $price,
+          quantity: $quantity
+        ) {
+          _id
+          name
+          description
+          price
+          quantity
+        }
+
+      }
+    `,
+
+    variables: {
+      id,
+      name,
+      description,
+      price: Number(price),
+      quantity: Number(quantity)
+    },
+
+    context: authContext()
+
+  });
+
+  return result.data.addProduct;
+};
+
+// UPDATE PRODUCT - ADMIN
+
+export const updateProduct = async (
+  id,
+  name,
+  description,
+  price,
+  quantity
+) => {
+
+  const result = await client.mutate({
+
+    mutation: gql`
+      mutation UpdateProduct(
+        $id: String!,
+        $name: String,
+        $description: String,
+        $price: Float,
+        $quantity: Int
+      ) {
+
+        updateProduct(
+          id: $id,
+          name: $name,
+          description: $description,
+          price: $price,
+          quantity: $quantity
+        ) {
+          _id
+          name
+          description
+          price
+          quantity
+        }
+
+      }
+    `,
+
+    variables: {
+      id,
+      name,
+      description,
+      price: Number(price),
+      quantity: Number(quantity)
+    },
+
+    context: authContext()
+
+  });
+
+  return result.data.updateProduct;
+};
+
+// DELETE PRODUCT - ADMIN
+
+export const deleteProduct = async (id) => {
+
+  const result = await client.mutate({
+
+    mutation: gql`
+      mutation DeleteProduct($id: String!) {
+
+        deleteProduct(id: $id)
+
+      }
+    `,
+
+    variables: {
+      id
+    },
+
+    context: authContext()
+
+  });
+
+  return result.data.deleteProduct;
+};
+
+// DELETE ORDER - ADMIN
+
+export const deleteOrder = async (id) => {
+
+  const result = await client.mutate({
+
+    mutation: gql`
+      mutation DeleteOrder($id: String!) {
+
+        deleteOrder(id: $id)
+
+      }
+    `,
+
+    variables: {
+      id
+    },
+
+    context: authContext()
+
+  });
+
+  return result.data.deleteOrder;
+};
 
 export default client;
