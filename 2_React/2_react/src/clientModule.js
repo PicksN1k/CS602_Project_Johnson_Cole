@@ -10,13 +10,20 @@ import {
 import { setContext } from '@apollo/client/link/context';
 
 
-// GraphQL server connection
+// --------------------------------------------------
+// GRAPHQL SERVER CONNECTION
+// --------------------------------------------------
+
 const httpLink = new HttpLink({
   uri: 'http://localhost:4000/'
 });
 
 
+// --------------------------------------------------
+// AUTHENTICATION
 // Automatically attach JWT token to every request
+// --------------------------------------------------
+
 const authLink = setContext((_, { headers }) => {
 
   const token = localStorage.getItem("token");
@@ -32,6 +39,10 @@ const authLink = setContext((_, { headers }) => {
 
 });
 
+
+// --------------------------------------------------
+// APOLLO CLIENT
+// --------------------------------------------------
 
 const client = new ApolloClient({
 
@@ -54,7 +65,9 @@ const client = new ApolloClient({
 });
 
 
+// ==================================================
 // LOGIN
+// ==================================================
 
 export const login = async (username, password) => {
 
@@ -80,6 +93,7 @@ export const login = async (username, password) => {
           }
 
         }
+
       }
     `,
 
@@ -94,7 +108,11 @@ export const login = async (username, password) => {
 };
 
 
-// GET PRODUCTS
+// ==================================================
+// PRODUCTS
+// ==================================================
+
+// GET ALL PRODUCTS
 
 export const getProducts = async () => {
 
@@ -102,6 +120,7 @@ export const getProducts = async () => {
 
     query: gql`
       query {
+
         products {
           _id
           name
@@ -109,6 +128,7 @@ export const getProducts = async () => {
           price
           quantity
         }
+
       }
     `
 
@@ -117,6 +137,10 @@ export const getProducts = async () => {
   return result.data.products;
 };
 
+
+// ==================================================
+// CUSTOMER FUNCTIONS
+// ==================================================
 
 // CREATE ORDER
 
@@ -132,6 +156,17 @@ export const createOrder = async (items) => {
         createOrder(items: $items) {
           _id
           total
+          createdAt
+
+          items {
+            product {
+              _id
+              name
+            }
+
+            quantity
+            price
+          }
         }
 
       }
@@ -147,7 +182,7 @@ export const createOrder = async (items) => {
 };
 
 
-// CUSTOMER ORDERS
+// GET LOGGED-IN CUSTOMER ORDERS
 
 export const getMyOrders = async () => {
 
@@ -171,7 +206,6 @@ export const getMyOrders = async () => {
 
             quantity
             price
-
           }
 
         }
@@ -184,29 +218,91 @@ export const getMyOrders = async () => {
   return result.data.myOrders;
 };
 
-// GET CUSTOMERS - ADMIN
+
+// ==================================================
+// ADMIN - CUSTOMERS
+// ==================================================
+
+// GET ALL CUSTOMERS
 
 export const getCustomers = async () => {
 
-  const auth = getAuthContext();
-
   const result = await client.query({
+
     query: gql`
       query {
+
         customers {
           id
           username
           role
         }
+
       }
-    `,
-    ...auth
+    `
+
   });
 
   return result.data.customers;
 };
 
-// ADD PRODUCT - ADMIN
+
+// GET ORDERS FOR A SPECIFIC CUSTOMER
+
+export const getCustomerOrders = async (customerId) => {
+
+  const result = await client.query({
+
+    query: gql`
+      query CustomerOrders(
+        $customerId: String!
+      ) {
+
+        customerOrders(
+          customerId: $customerId
+        ) {
+
+          _id
+          total
+          createdAt
+
+          customer {
+            id
+            username
+            role
+          }
+
+          items {
+
+            product {
+              _id
+              name
+            }
+
+            quantity
+            price
+          }
+
+        }
+
+      }
+    `,
+
+    variables: {
+      customerId
+    }
+
+  });
+
+  return result.data.customerOrders;
+};
+
+
+// ==================================================
+// ADMIN - PRODUCT MANAGEMENT
+// ==================================================
+
+// ADD PRODUCT
 
 export const addProduct = async (
   id,
@@ -234,6 +330,7 @@ export const addProduct = async (
           price: $price,
           quantity: $quantity
         ) {
+
           _id
           name
           description
@@ -250,16 +347,15 @@ export const addProduct = async (
       description,
       price: Number(price),
       quantity: Number(quantity)
-    },
-
-    context: authContext()
+    }
 
   });
 
   return result.data.addProduct;
 };
 
-// UPDATE PRODUCT - ADMIN
+
+// UPDATE PRODUCT
 
 export const updateProduct = async (
   id,
@@ -287,6 +383,7 @@ export const updateProduct = async (
           price: $price,
           quantity: $quantity
         ) {
+
           _id
           name
           description
@@ -303,63 +400,123 @@ export const updateProduct = async (
       description,
       price: Number(price),
       quantity: Number(quantity)
-    },
-
-    context: authContext()
+    }
 
   });
 
   return result.data.updateProduct;
 };
 
-// DELETE PRODUCT - ADMIN
+
+// DELETE PRODUCT
 
 export const deleteProduct = async (id) => {
 
   const result = await client.mutate({
 
     mutation: gql`
-      mutation DeleteProduct($id: String!) {
+      mutation DeleteProduct(
+        $id: String!
+      ) {
 
-        deleteProduct(id: $id)
+        deleteProduct(
+          id: $id
+        )
 
       }
     `,
 
     variables: {
       id
-    },
-
-    context: authContext()
+    }
 
   });
 
   return result.data.deleteProduct;
 };
 
-// DELETE ORDER - ADMIN
+
+// ==================================================
+// ADMIN - ORDER MANAGEMENT
+// ==================================================
+
+// DELETE ORDER
 
 export const deleteOrder = async (id) => {
 
   const result = await client.mutate({
 
     mutation: gql`
-      mutation DeleteOrder($id: String!) {
+      mutation DeleteOrder(
+        $id: String!
+      ) {
 
-        deleteOrder(id: $id)
+        deleteOrder(
+          id: $id
+        )
 
       }
     `,
 
     variables: {
       id
-    },
-
-    context: authContext()
+    }
 
   });
 
   return result.data.deleteOrder;
 };
+
+
+// UPDATE ORDER
+
+export const updateOrder = async (
+  id,
+  items
+) => {
+
+  const result = await client.mutate({
+
+    mutation: gql`
+      mutation UpdateOrder(
+        $id: String!,
+        $items: [OrderItemInput!]!
+      ) {
+
+        updateOrder(
+          id: $id,
+          items: $items
+        ) {
+
+          _id
+          total
+          createdAt
+
+          items {
+
+            product {
+              _id
+              name
+            }
+
+            quantity
+            price
+          }
+
+        }
+
+      }
+    `,
+
+    variables: {
+      id,
+      items
+    }
+
+  });
+
+  return result.data.updateOrder;
+};
+
 
 export default client;
