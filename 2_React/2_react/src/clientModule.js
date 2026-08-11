@@ -188,31 +188,6 @@ export const getMyOrders = async () => {
 
 export const getCustomers = async () => {
 
-  const result = await client.query({
-
-    query: gql`
-      query {
-        customers {
-          id
-          username
-          role
-        }
-      }
-    `,
-
-    context: authContext(),
-
-    fetchPolicy: 'network-only'
-
-  });
-
-  return result.data.customers;
-};
-
-// GET CUSTOMER ORDERS - ADMIN
-
-export const getCustomers = async () => {
-
   const auth = getAuthContext();
 
   const result = await client.query({
