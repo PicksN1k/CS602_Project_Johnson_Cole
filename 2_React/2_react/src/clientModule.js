@@ -1,3 +1,5 @@
+// File: clientModule.js
+
 import {
   ApolloClient,
   InMemoryCache,
@@ -5,43 +7,56 @@ import {
   gql
 } from '@apollo/client';
 
+import { setContext } from '@apollo/client/link/context';
 
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: 'http://localhost:4000/'
-  }),
 
-  cache: new InMemoryCache(),
-
-  defaultOptions: {
-    query: {
-      fetchPolicy: 'network-only'
-    }
-  }
+// GraphQL server connection
+const httpLink = new HttpLink({
+  uri: 'http://localhost:4000/'
 });
 
 
-function getAuthContext() {
+// Automatically attach JWT token to every request
+const authLink = setContext((_, { headers }) => {
 
   const token = localStorage.getItem("token");
 
   return {
-    context: {
-      headers: {
-        authorization:
-          token ? `Bearer ${token}` : ""
-      }
+    headers: {
+      ...headers,
+      authorization: token
+        ? `Bearer ${token}`
+        : ""
     }
   };
-}
+
+});
+
+
+const client = new ApolloClient({
+
+  link: authLink.concat(httpLink),
+
+  cache: new InMemoryCache(),
+
+  defaultOptions: {
+
+    query: {
+      fetchPolicy: 'network-only'
+    },
+
+    watchQuery: {
+      fetchPolicy: 'network-only'
+    }
+
+  }
+
+});
 
 
 // LOGIN
 
-export const login = async (
-  username,
-  password
-) => {
+export const login = async (username, password) => {
 
   const result = await client.mutate({
 
@@ -107,8 +122,6 @@ export const getProducts = async () => {
 
 export const createOrder = async (items) => {
 
-  const auth = getAuthContext();
-
   const result = await client.mutate({
 
     mutation: gql`
@@ -126,9 +139,7 @@ export const createOrder = async (items) => {
 
     variables: {
       items
-    },
-
-    ...auth
+    }
 
   });
 
@@ -139,8 +150,6 @@ export const createOrder = async (items) => {
 // CUSTOMER ORDERS
 
 export const getMyOrders = async () => {
-
-  const auth = getAuthContext();
 
   const result = await client.query({
 
@@ -162,12 +171,13 @@ export const getMyOrders = async () => {
 
             quantity
             price
-          }
-        }
-      }
-    `,
 
-    ...auth
+          }
+
+        }
+
+      }
+    `
 
   });
 
