@@ -6,6 +6,7 @@ import Login from "./Login.js";
 import * as clientModule from "./clientModule.js";
 
 import "./App.css";
+import CustomerShop from "./CustomerShop.js";
 
 
 function App() {
@@ -87,15 +88,7 @@ function App() {
 
       {user.role === "customer" && (
 
-        <div>
-
-          <h2>Customer Shopping</h2>
-
-          <p>
-            Product shopping will appear here.
-          </p>
-
-        </div>
+        <CustomerShop />
 
       )}
 
