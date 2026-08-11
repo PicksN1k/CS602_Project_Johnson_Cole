@@ -1,91 +1,180 @@
-// File: authModule.js
+// File: clientModule.js
 
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import {
+  ApolloClient,
+  InMemoryCache,
+  HttpLink,
+  gql
+} from '@apollo/client';
 
-import { User } from './models/index.js';
 
-const JWT_SECRET = "CS602_PROJECT_SECRET";
+const client = new ApolloClient({
 
+  link: new HttpLink({
+    uri: 'http://localhost:4000/'
+  }),
+
+  cache: new InMemoryCache(),
+
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only'
+    }
+  }
+
+});
+
+
+// Get authorization header
+function authContext() {
+
+  const token = localStorage.getItem("token");
+
+  return {
+    headers: {
+      Authorization: token
+        ? `Bearer ${token}`
+        : ""
+    }
+  };
+
+}
+
+
+// LOGIN
 
 export const login = async (username, password) => {
 
-  const user = await User.findOne({ username: username });
+  const result = await client.mutate({
 
-  if (!user) {
-    throw new Error("Invalid username or password");
-  }
+    mutation: gql`
+      mutation Login(
+        $username: String!,
+        $password: String!
+      ) {
+        login(
+          username: $username,
+          password: $password
+        ) {
+          token
 
-  const passwordMatch =
-    await bcrypt.compare(password, user.password);
+          user {
+            id
+            username
+            role
+          }
+        }
+      }
+    `,
 
-  if (!passwordMatch) {
-    throw new Error("Invalid username or password");
-  }
+    variables: {
+      username,
+      password
+    }
 
-  const token = jwt.sign(
-    {
-      id: user._id.toString(),
-      username: user.username,
-      role: user.role
+  });
+
+  return result.data.login;
+};
+
+
+// GET PRODUCTS
+
+export const getProducts = async () => {
+
+  const result = await client.query({
+
+    query: gql`
+      query {
+        products {
+          _id
+          name
+          description
+          price
+          quantity
+        }
+      }
+    `
+
+  });
+
+  return result.data.products;
+};
+
+
+// CREATE ORDER
+
+export const createOrder = async (items) => {
+
+  const result = await client.mutate({
+
+    mutation: gql`
+      mutation CreateOrder(
+        $items: [OrderItemInput!]!
+      ) {
+        createOrder(items: $items) {
+          _id
+          total
+
+          items {
+            product {
+              _id
+              name
+            }
+
+            quantity
+            price
+          }
+        }
+      }
+    `,
+
+    variables: {
+      items
     },
-    JWT_SECRET,
-    {
-      expiresIn: "2h"
-    }
-  );
 
-  return {
-    token: token,
-    user: {
-      id: user._id.toString(),
-      username: user.username,
-      role: user.role
-    }
-  };
+    context: authContext()
+
+  });
+
+  return result.data.createOrder;
 };
 
 
-export const getUserFromToken = (authorization) => {
+// GET CUSTOMER ORDERS
 
-  if (!authorization) {
-    return null;
-  }
+export const getMyOrders = async () => {
 
-  if (!authorization.startsWith("Bearer ")) {
-    return null;
-  }
+  const result = await client.query({
 
-  const token = authorization.substring(7);
+    query: gql`
+      query {
+        myOrders {
+          _id
+          total
+          createdAt
 
-  try {
+          items {
+            product {
+              _id
+              name
+            }
 
-    return jwt.verify(token, JWT_SECRET);
+            quantity
+            price
+          }
+        }
+      }
+    `,
 
-  } catch (error) {
+    context: authContext(),
 
-    return null;
+    fetchPolicy: 'network-only'
 
-  }
+  });
+
+  return result.data.myOrders;
 };
 
-export const requireUser = (context) => {
 
-  if (!context.user) {
-    throw new Error("Authentication required");
-  }
-
-  return context.user;
-};
-
-
-export const requireAdmin = (context) => {
-
-  requireUser(context);
-
-  if (context.user.role !== "admin") {
-    throw new Error("Admin access required");
-  }
-
-  return context.user;
-};
+export default client;
