@@ -33,11 +33,6 @@ export default function AdminDashboard() {
     loadCustomers();
   }, []);
 
-
-  // --------------------------------------------------
-  // LOAD PRODUCTS
-  // --------------------------------------------------
-
   async function loadProducts() {
 
     try {
@@ -62,11 +57,6 @@ export default function AdminDashboard() {
     }
 
   }
-
-
-  // --------------------------------------------------
-  // LOAD CUSTOMERS
-  // --------------------------------------------------
 
   async function loadCustomers() {
 
@@ -100,11 +90,6 @@ export default function AdminDashboard() {
 
   }
 
-
-  // --------------------------------------------------
-  // VIEW CUSTOMER ORDERS
-  // --------------------------------------------------
-
   async function viewCustomerOrders(customer) {
 
     try {
@@ -135,11 +120,6 @@ export default function AdminDashboard() {
     }
 
   }
-
-
-  // --------------------------------------------------
-  // PRODUCT FORM
-  // --------------------------------------------------
 
   function handleChange(event) {
 
@@ -203,11 +183,6 @@ export default function AdminDashboard() {
 
   }
 
-
-  // --------------------------------------------------
-  // ADD PRODUCT
-  // --------------------------------------------------
-
   async function handleAddProduct(event) {
 
     event.preventDefault();
@@ -248,11 +223,6 @@ export default function AdminDashboard() {
     }
 
   }
-
-
-  // --------------------------------------------------
-  // UPDATE PRODUCT
-  // --------------------------------------------------
 
   async function handleUpdateProduct() {
 
@@ -303,11 +273,6 @@ export default function AdminDashboard() {
 
   }
 
-
-  // --------------------------------------------------
-  // DELETE PRODUCT
-  // --------------------------------------------------
-
   async function handleDeleteProduct(id) {
 
     const confirmed =
@@ -348,11 +313,6 @@ export default function AdminDashboard() {
 
   }
 
-
-  // --------------------------------------------------
-  // START EDITING ORDER
-  // --------------------------------------------------
-
   function handleEditOrder(order) {
 
     setError("");
@@ -370,11 +330,6 @@ export default function AdminDashboard() {
     });
 
   }
-
-
-  // --------------------------------------------------
-  // CHANGE ORDER QUANTITY
-  // --------------------------------------------------
 
   function handleOrderQuantityChange(
     index,
@@ -395,11 +350,6 @@ export default function AdminDashboard() {
     });
 
   }
-
-
-  // --------------------------------------------------
-  // SAVE UPDATED ORDER
-  // --------------------------------------------------
 
   async function handleUpdateOrder() {
 
@@ -482,21 +432,11 @@ export default function AdminDashboard() {
 
   }
 
-
-  // --------------------------------------------------
-  // CANCEL ORDER EDIT
-  // --------------------------------------------------
-
   function cancelOrderEdit() {
 
     setEditingOrder(null);
 
   }
-
-
-  // --------------------------------------------------
-  // DELETE ORDER
-  // --------------------------------------------------
 
   async function handleDeleteOrder(id) {
 
@@ -547,11 +487,6 @@ export default function AdminDashboard() {
     }
 
   }
-
-
-  // --------------------------------------------------
-  // DISPLAY
-  // --------------------------------------------------
 
   return (
 

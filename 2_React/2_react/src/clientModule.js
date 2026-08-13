@@ -9,20 +9,14 @@ import {
 
 import { setContext } from '@apollo/client/link/context';
 
-
-// --------------------------------------------------
 // GRAPHQL SERVER CONNECTION
-// --------------------------------------------------
 
 const httpLink = new HttpLink({
   uri: 'http://localhost:4000/'
 });
 
-
-// --------------------------------------------------
 // AUTHENTICATION
 // Automatically attach JWT token to every request
-// --------------------------------------------------
 
 const authLink = setContext((_, { headers }) => {
 
@@ -39,10 +33,7 @@ const authLink = setContext((_, { headers }) => {
 
 });
 
-
-// --------------------------------------------------
 // APOLLO CLIENT
-// --------------------------------------------------
 
 const client = new ApolloClient({
 
@@ -64,10 +55,7 @@ const client = new ApolloClient({
 
 });
 
-
-// ==================================================
 // LOGIN
-// ==================================================
 
 export const login = async (username, password) => {
 
@@ -107,10 +95,7 @@ export const login = async (username, password) => {
   return result.data.login;
 };
 
-
-// ==================================================
 // PRODUCTS
-// ==================================================
 
 // GET ALL PRODUCTS
 
@@ -137,10 +122,7 @@ export const getProducts = async () => {
   return result.data.products;
 };
 
-
-// ==================================================
 // CUSTOMER FUNCTIONS
-// ==================================================
 
 // CREATE ORDER
 
@@ -218,10 +200,7 @@ export const getMyOrders = async () => {
   return result.data.myOrders;
 };
 
-
-// ==================================================
 // ADMIN - CUSTOMERS
-// ==================================================
 
 // GET ALL CUSTOMERS
 
@@ -297,10 +276,7 @@ export const getCustomerOrders = async (customerId) => {
   return result.data.customerOrders;
 };
 
-
-// ==================================================
 // ADMIN - PRODUCT MANAGEMENT
-// ==================================================
 
 // ADD PRODUCT
 
@@ -435,10 +411,8 @@ export const deleteProduct = async (id) => {
   return result.data.deleteProduct;
 };
 
-
-// ==================================================
 // ADMIN - ORDER MANAGEMENT
-// ==================================================
+
 
 // DELETE ORDER
 
